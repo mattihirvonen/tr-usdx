@@ -32,7 +32,7 @@
 //#define CONDENSED      1   // Display in 4 line mode (for OLED and LCD2004 modules)
 //#define CAT_EXT        1   // Extended CAT support: remote button and screen control commands over CAT
 //#define CAT_STREAMING  1   // Extended CAT support: audio streaming over CAT, once enabled and triggered with CAT cmd, samplerate 7812Hz, 8-bit unsigned audio is sent over UART. The ";" is omited in the data-stream, and only sent to indicate the beginning and end of a CAT cmd.
-#define CW_DECODER       1   // CW decoder
+//#define CW_DECODER       1   // CW decoder
 #define TX_ENABLE        1   // Disable this for RX only (no transmit), e.g. to support uSDX for kids idea: https://groups.io/g/ucx/topic/81030243#6276
 #define KEY_CLICK        1   // Reduce key clicks by envelope shaping
 #define SEMI_QSK         1   // Just after keying the transmitter, keeps the RX muted for a short amount of time in the anticipation for continued keying
