@@ -47,7 +47,7 @@
 //#define TESTBENCH      1   // Tests RX chain by injection of sine wave, measurements results are sent over serial
 //#define CW_FREQS_QRP   1   // Defaults to CW QRP   frequencies when changing bands
 //#define CW_FREQS_FISTS 1   // Defaults to CW FISTS frequencies when changing bands
-#define CW_MESSAGE       1   // Transmits pre-defined CW messages on-demand (left-click menu item 4.2)
+//#define CW_MESSAGE       1   // Transmits pre-defined CW messages on-demand (left-click menu item 4.2)
 //#define CW_MESSAGE_EXT 1   // Additional CW messages
 //#define TX_DELAY       1   // Enables a delay in the actual transmission to allow relay-switching to be completed before the power is applied (see also NTX, PTX definitions below for GPIO that can switch relay/PA)
 //#define NTX            11  // Enables LOW  on TX, used as PTT out to enable external PAs (a value of 11 means PB3 is used)
@@ -57,6 +57,7 @@
 //#define F_XTAL  20000000   // Enable this for uSDXDuO, 20MHz SI5351 crystal
 //#define TX_CLK0_CLK1   1   // Enable this for uSDXDuO, i.e. when PA is driven by CLK0, CLK1 (not CLK2); NTX pin may be used for enabling the TX path (this is like RX pin, except that RX may also be used as attenuator)
 //#define F_CLK2  12000000   // Enables a fixed CLK2 clock output of choice (only applicable when TX_CLK0_CLK1 is enabled), e.g. for up-converter or to clock UART USB device
+//#define FM_AM            1   // Enable FM/AM modes
 
 // QCX pin defintions
 #define LCD_D4  0         //PD0    (pin 2)
@@ -1948,7 +1949,11 @@ const uint8_t ssb_cap = 1;
 const uint8_t dsp_cap = SDR;
 #endif
 
+#ifdef FM_AM
 enum mode_t { LSB, USB, CW, FM, AM };
+#else
+enum mode_t { LSB, USB, CW };
+#endif
 volatile uint8_t mode = USB;
 volatile uint16_t numSamples = 0;
 
@@ -2172,6 +2177,7 @@ void dsp_tx_cw()
   OCR1AL = (p_sin >> (16 - volume)) + 128;
 }
 
+#ifdef FM_AM
 void dsp_tx_am()
 { // jitter dependent things first
   ADCSRA |= (1 << ADSC);    // start next ADC conversion (trigger ADC interrupt if ADIE flag is set)
@@ -2186,7 +2192,9 @@ void dsp_tx_am()
   in=max(0, min(255, (in + AM_BASE)));
   amp=in;// lut[in];
 }
+#endif
 
+#ifdef FM_AM
 void dsp_tx_fm()
 { // jitter dependent things first
   ADCSRA |= (1 << ADSC);    // start next ADC conversion (trigger ADC interrupt if ADIE flag is set)
@@ -2198,6 +2206,7 @@ void dsp_tx_fm()
   int16_t df = in;
   si5351.freq_calc_fast(df);           // calculate SI5351 registers based on frequency shift and carrier frequency
 }
+#endif
 
 #define EA(y, x, one_over_alpha)  (y) = (y) + ((x) - (y)) / (one_over_alpha); // exponental averaging [Lyons 13.33.1]
 #define MLEA(y, x, L, M)  (y)  = (y) + ((((x) - (y)) >> (L)) - (((x) - (y)) >> (M))); // multiplierless exponental averaging [Lyons 13.33.1], with alpha=1/2^L - 1/2^M
@@ -2792,6 +2801,7 @@ inline int16_t slow_dsp(int16_t ac)
   static uint8_t absavg256cnt;
   if(!(absavg256cnt--)){ _absavg256 = absavg256; absavg256 = 0; } else absavg256 += abs(ac);
 
+#ifdef FM_AM
   if(mode == AM) {
     ac = magn(i, q);
     { static int16_t dc;   // DC decoupling
@@ -2811,6 +2821,7 @@ inline int16_t slow_dsp(int16_t ac)
     //ac = ((q > 0) == !(i > 0)) ? 128 : -128; // XOR I/Q zero-cross detector
   }  // needs: p.12 https://www.veron.nl/wp-content/uploads/2014/01/FmDemodulator.pdf
   else { ; }  // USB, LSB, CW
+#endif
 
 #ifdef FAST_AGC
   if(agc == 2) {
@@ -3802,8 +3813,10 @@ void switch_rxtx(uint8_t tx_enable){
       case USB:
       case LSB: func_ptr = dsp_tx; break;
       case CW:  func_ptr = dsp_tx_cw; break;
+#ifdef FM_AM
       case AM:  func_ptr = dsp_tx_am; break;
       case FM:  func_ptr = dsp_tx_fm; break;
+#endif
     }
   } else {  // rx
     if((mode == CW) && (!(semi_qsk_timeout))){
@@ -4058,7 +4071,11 @@ void show_banner(){
 }
 
 const char* vfosel_label[] = { "A", "B"/*, "Split"*/ };
+#ifdef FM_AM
 const char* mode_label[5] = { "LSB", "USB", "CW ", "FM ", "AM " };
+#else
+const char* mode_label[3] = { "LSB", "USB", "CW " };
+#endif
 
 inline void display_vfo(int32_t f){
   lcd.setCursor(0, 1);
