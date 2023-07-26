@@ -6,6 +6,8 @@
 
 #define VERSION   "1.02x"
 
+#define MYCALL    "OH2AWX"
+
 // Configuration switches; remove/add a double-slash at line-start to enable/disable a feature; to save space disable e.g. CAT, DIAG, KEYER
 #define DIAG             1   // Hardware diagnostics on startup (only disable when your rig is working)
 #define KEYER            1   // CW keyer
@@ -2234,8 +2236,12 @@ uint8_t delayWithKeySense(uint32_t ms){
 #ifdef CW_MESSAGE_EXT
 char cw_msg[6][48] = { "CQ PE1NNN +", "CQ CQ DE PE1NNN PE1NNN +", "GE TKS 5NN 5NN NAME IS GUIDO GUIDO HW?", "FB RPTR TX 5W 5W ANT INV V 73 CUAGN", "73 TU E E", "PE1NNN" };
 #else
+#ifdef MYCALL
+char cw_msg[1][48] = { "CQ " MYCALL " +" };
+#else
 char cw_msg[1][48] = { "CQ PE1NNN +" };
-#endif
+#endif //MYCALL
+#endif //CW_MESSAGE_EXT
 uint8_t cw_msg_interval = 5; // number of seconds CW message is repeated
 uint32_t cw_msg_event = 0;
 uint8_t cw_msg_id = 0; // selected message
@@ -4065,7 +4071,11 @@ void show_banner(){
   const char* cap_label[] = { "SSB", "DSP", "SDR" };
   if(ssb_cap || dsp_cap){ lcd.print('-'); lcd.print(cap_label[dsp_cap]); }
 #else
+#ifdef MYCALL
+  lcd.print(F(MYCALL));
+#else
   lcd.print(F("uSDX"));
+#endif //MYCALL
 #endif //QCX
   lcd.print('\x01'); lcd_blanks(); lcd_blanks();
 }
